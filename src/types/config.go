@@ -8,12 +8,13 @@ type Command struct {
 
 //DeploymentConfig - Config for a single deployment
 type DeploymentConfig struct {
-	Name     string    `json:"name"`
-	Type     string    `json:"type"`
-	Location string    `json:"location"`
-	Secret   string    `json:"secret"`
-	Commands []Command `json:"commands"`
-	SSHURL   string
+	RepoName           string    `json:"repoName"`
+	Type               string    `json:"type"`
+	RepoLocation       string    `json:"repoLocation"`
+	RepoBranch         string    `json:"repoBranch"`
+	Secret             string    `json:"secret"`
+	DeploymentCommands []Command `json:"commands"`
+	SSHURL             string
 }
 
 //Config - start up config

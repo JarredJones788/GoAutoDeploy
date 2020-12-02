@@ -9,4 +9,5 @@ type Repository struct {
 //Payload -
 type Payload struct {
 	Repository Repository `json:"repository"`
+	Ref        string     `json:"ref"`
 }
