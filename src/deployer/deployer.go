@@ -30,7 +30,7 @@ func (deploy AutoDeploy) Init(config *types.Config) error {
 	//Setup mux server
 	r := mux.NewRouter()
 	deploy.setUpRoutes(r)
-	fmt.Println("Server Started")
+	fmt.Println("Server Listening on port " + config.ServerPort)
 	err := http.ListenAndServe(":"+config.ServerPort, r)
 	if err != nil {
 		return err
@@ -165,10 +165,17 @@ func (deploy AutoDeploy) updatePushed(w http.ResponseWriter, r *http.Request) {
 	cmd = exec.Command("git", "-C", deployment.RepoLocation, "pull", deployment.SSHURL)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	_, err = cmd.Output()
+	pullOutput, err := cmd.Output()
 	if err != nil {
 		fmt.Println("Failed pulling repo " + deployment.RepoName + " -> " + stderr.String())
 		deploy.errorResponse(w, 401, 10, "Request Failed")
+		return
+	}
+
+	//Check if repo has changed.. If not then dont run post pull commands.
+	if strings.Contains(string(pullOutput), "Already up to date") {
+		fmt.Println("Git Repo is already up to date. Skipping...")
+		deploy.errorResponse(w, 401, 9, "Repo is already up to date")
 		return
 	}
 
