@@ -1,0 +1,18 @@
+{
+    "serverPort": "9000",
+    "deployments": [
+        {
+            "repoName": "test_repo",
+            "type": "repository",
+            "repoLocation": "/website",
+            "repoBranch": "main",
+            "secret": "SECRET_KEY",
+            "commands": [
+                {
+                    "name": "pm2",
+                    "args": ["restart", "server"]
+                }
+            ]
+        }
+    ]
+}

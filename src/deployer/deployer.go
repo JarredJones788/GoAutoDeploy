@@ -44,6 +44,28 @@ func (deploy AutoDeploy) setUpRoutes(r *mux.Router) {
 	r.HandleFunc("/github/push", deploy.updatePushed)
 }
 
+//badRequest - returns a generic bad response
+func (deploy AutoDeploy) httpResponse(w http.ResponseWriter, status bool) {
+	failed, err := json.Marshal(types.GenericResponse{Response: status})
+	if err != nil {
+		w.Write([]byte("BACKEND ERROR"))
+		return
+	}
+	w.Write(failed)
+}
+
+//errorResponse - returns a error response
+func (deploy AutoDeploy) errorResponse(w http.ResponseWriter, httpStatusCode int, errorCode int, errorMsg string) {
+	errorBody := types.ErrorResponseBody{HTTPStatusCode: httpStatusCode, ErrorCode: errorCode, ErrorMsg: errorMsg}
+	res, err := json.Marshal(types.ErrorResponse{Error: errorBody})
+	if err != nil {
+		w.Write([]byte("BACKEND ERROR"))
+		return
+	}
+	w.WriteHeader(httpStatusCode)
+	w.Write(res)
+}
+
 //setUpHeaders - sets the desired headers for an http response
 func (deploy AutoDeploy) setUpHeaders(w http.ResponseWriter, r *http.Request) bool {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -124,7 +146,7 @@ func (deploy AutoDeploy) updatePushed(w http.ResponseWriter, r *http.Request) {
 	deployment, err := deploy.validateRequest(r)
 	if err != nil {
 		fmt.Println(err.Error())
-		w.Write([]byte("Request Failed"))
+		deploy.errorResponse(w, 401, 10, "Request Failed")
 		return
 	}
 
@@ -132,12 +154,12 @@ func (deploy AutoDeploy) updatePushed(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("git", "-C", deployment.RepoLocation, "rev-parse", "--show-toplevel")
 	_, err = cmd.Output()
 	if err != nil {
-		fmt.Println("Not Git Repository was found at: " + deployment.RepoLocation)
-		w.Write([]byte("Request Failed"))
+		fmt.Println("No Git Repository was found at: " + deployment.RepoLocation)
+		deploy.errorResponse(w, 401, 10, "Request Failed")
 		return
 	}
 
-	fmt.Println("Location is a valid Git Repo.")
+	fmt.Println("Location is a valid Git Repo")
 
 	//Pull the current repo to the location
 	cmd = exec.Command("git", "-C", deployment.RepoLocation, "pull", deployment.SSHURL)
@@ -146,7 +168,7 @@ func (deploy AutoDeploy) updatePushed(w http.ResponseWriter, r *http.Request) {
 	_, err = cmd.Output()
 	if err != nil {
 		fmt.Println("Failed pulling repo " + deployment.RepoName + " -> " + stderr.String())
-		w.Write([]byte("Request Failed"))
+		deploy.errorResponse(w, 401, 10, "Request Failed")
 		return
 	}
 
@@ -155,14 +177,16 @@ func (deploy AutoDeploy) updatePushed(w http.ResponseWriter, r *http.Request) {
 	//Run deployment commands after pulling the repo
 	for _, command := range deployment.DeploymentCommands {
 		cmd := exec.Command(command.Name, command.Args...)
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
 		output, err := cmd.Output()
 		if err != nil {
-			fmt.Println("Command Failed: " + command.Name + " -> " + err.Error())
+			fmt.Println("Command Failed: " + command.Name + " -> " + stderr.String())
 			continue
 		}
 		fmt.Println("Command " + command.Name + " was ran:")
 		fmt.Println(string(output))
 	}
 
-	w.Write([]byte("Success"))
+	deploy.httpResponse(w, true)
 }

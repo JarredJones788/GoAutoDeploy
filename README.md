@@ -2,32 +2,18 @@
 SETUP
 1) Create a deploy key for the github repo.
 2) Setup a git directory or use an existing one.
-3) Setup webhook to point to the server.
-4) Configure config correctly.
+3) Setup a webhook to point to the server: http://SERVER-IP:CONFIG_PORT/github/push
+4) setup config correctly. Basic Example config can be found in /cfg
 
-Linux Config Location: /etc/GoAutoDeploy/config.json
+Config Location On Server: /etc/autodeploy/config.json
 
-Windows Config Location ./cfg/config.json
+CLI Service Commands
+- autodeploy init (First time use, creates a systemd service)
+- autodeploy start 
+- autodeploy stop
+- autodeploy restart
+- autodeploy status
+- autodeploy remove
 
-
-Basic Example config (JSON)
---------------
-
-{
-    "serverPort": "9000",
-    "deployments": [
-        {
-            "repoName": "test_repo",
-            "type": "repository",
-            "repoLocation": "/website",
-            "repoBranch": "main",
-            "secret": "MY_SECRET_KEY",
-            "commands": [
-                {
-                    "name": "pm2",
-                    "args": ["restart", "server"]
-                }
-            ]
-        }
-    ]
-}
+GO Packages Used
+- https://github.com/kardianos/osext
